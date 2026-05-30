@@ -2,6 +2,7 @@ package me.purpurcof.identica.addon.chatblocker.velocity;
 
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import me.purpurcof.identica.addon.chatblocker.listener.PacketEventsListener;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
@@ -58,6 +59,11 @@ public class VelocityChatBlockerPlugin {
                 .schedule();
 
         logger.info("Identica-ChatBlocker initialized");
+    }
+
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
+        logger.info("Identica-ChatBlocker shutting down");
     }
 
     private void initServices() {
