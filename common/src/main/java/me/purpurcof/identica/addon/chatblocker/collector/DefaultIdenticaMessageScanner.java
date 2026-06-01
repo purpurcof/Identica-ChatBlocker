@@ -8,10 +8,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
 
+    private static final Logger LOGGER = Logger.getLogger(DefaultIdenticaMessageScanner.class.getName());
     private static final Pattern MINIMESSAGE_TAG = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{[^}]+}");
 
@@ -35,7 +38,9 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
             }
 
             this.plainTextFragments = Collections.unmodifiableSet(fragments);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to scan Identica messages", e);
+        }
     }
 
     @Override
@@ -69,7 +74,9 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
                         field.setAccessible(true);
                         Object value = field.get(obj);
                         collectStrings(value, result);
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        LOGGER.log(Level.FINE, "Exception ignored while accessing field", e);
+                    }
                 }
             }
         }
