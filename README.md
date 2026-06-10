@@ -2,14 +2,19 @@
 
 # Identica-ChatBlocker
 
-![build](https://img.shields.io/github/actions/workflow/status/purpurcof/Identica-ChatBlocker/build.yml?branch=dev)
-![version](https://img.shields.io/github/v/release/purpurcof/Identica-ChatBlocker)
-
 Addon-plugin for [Identica](https://github.com/whereareiam/Identica) that blocks chat messages during authentication.
 
 </div>
 
 ---
+
+### Information
+
+![build](https://img.shields.io/github/actions/workflow/status/purpurcof/Identica-ChatBlocker/build.yml?branch=dev)
+![version](https://img.shields.io/github/v/release/purpurcof/Identica-ChatBlocker)
+
+[![GitHub Downloads](https://img.shields.io/github/downloads/purpurcof/Identica-ChatBlocker/total?&label=GitHub%20Downloads)](https://github.com/purpurcof/Identica-ChatBlocker/releases)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/5oaiXkWo?&label=Modrinth%20Downloads)](https://modrinth.com/plugin/5oaiXkWo)
 
 ### Requirements
 
