@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
         id = "identica-chatblocker",
         name = "Identica-ChatBlocker",
-        version = "1.0.0",
+        version = "1.1.0",
         description = "Blocks chat messages during authentication",
         authors = {"purpurcof"},
         dependencies = {
