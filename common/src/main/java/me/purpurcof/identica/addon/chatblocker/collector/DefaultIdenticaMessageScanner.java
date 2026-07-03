@@ -7,6 +7,8 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,8 +19,9 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
     private static final Logger LOGGER = Logger.getLogger(DefaultIdenticaMessageScanner.class.getName());
     private static final Pattern MINIMESSAGE_TAG = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{[^}]+}");
+    private static final int MAX_RECURSION_DEPTH = 8;
 
-    private Set<String> plainTextFragments = Collections.emptySet();
+    private volatile Set<String> plainTextFragments = Collections.emptySet();
 
     @Override
     public void scan() {
@@ -54,31 +57,55 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
     }
 
     private void collectStrings(Object obj, Set<String> result) {
-        if (obj == null) return;
+        collectStrings(obj, result, new IdentityHashMap<>(), 0);
+    }
 
-        switch (obj) {
-            case String s -> result.add(s);
-            case Collection<?> col -> {
-                for (Object item : col) {
-                    collectStrings(item, result);
-                }
+    private void collectStrings(Object obj, Set<String> result, Map<Object, Boolean> visited, int depth) {
+        if (obj == null) return;
+        if (depth > MAX_RECURSION_DEPTH) return;
+        if (visited.containsKey(obj)) return;
+        visited.put(obj, Boolean.TRUE);
+
+        try {
+            if (obj instanceof String s) {
+                result.add(s);
+                return;
             }
 
-            default -> {
-                Class<?> clazz = obj.getClass();
-                if (clazz.getName().startsWith("java.")) return;
-                if (clazz.isEnum()) return;
+            if (obj instanceof Collection<?> col) {
+                for (Object item : col) {
+                    collectStrings(item, result, visited, depth + 1);
+                }
+                return;
+            }
 
-                for (Field field : clazz.getDeclaredFields()) {
-                    try {
+            Class<?> clazz = obj.getClass();
+            if (clazz.getName().startsWith("java.")) return;
+            if (clazz.isEnum()) return;
+
+            for (Field field : clazz.getDeclaredFields()) {
+                boolean accessible = field.canAccess(obj);
+                try {
+                    if (!accessible) {
                         field.setAccessible(true);
-                        Object value = field.get(obj);
-                        collectStrings(value, result);
-                    } catch (Exception e) {
-                        LOGGER.log(Level.FINE, "Exception ignored while accessing field", e);
+                    }
+                    Object value = field.get(obj);
+                    collectStrings(value, result, visited, depth + 1);
+                } catch (SecurityException se) {
+                    LOGGER.log(Level.FINE, "Security manager denied access to field: " + field.getName(), se);
+                } catch (Exception e) {
+                    LOGGER.log(Level.FINE, "Exception ignored while accessing field", e);
+                } finally {
+                    if (!accessible) {
+                        try {
+                            field.setAccessible(false);
+                        } catch (Exception ignore) {
+                        }
                     }
                 }
             }
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Unexpected error during message collection", t);
         }
     }
 }
