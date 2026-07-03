@@ -31,11 +31,11 @@ public class PacketEventsListener implements PacketListener {
 
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
+
         DefaultMessageFilterService filter = filterService.get();
         DefaultIdenticaMessageScanner scanner = messageScanner.get();
         if (filter == null || scanner == null) return;
-
-        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
 
         UUID playerUUID = event.getUser().getUUID();
         if (!filter.isBlocked(playerUUID)) return;
