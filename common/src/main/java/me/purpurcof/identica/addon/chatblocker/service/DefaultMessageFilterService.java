@@ -12,10 +12,15 @@ import me.whereareiam.identica.replication.cache.base.Cache;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DefaultMessageFilterService implements MessageFilterService, EventListener {
 
     private static final long DEFAULT_TTL_MS = 300_000;
+    private static final long CACHE_GET_TIMEOUT_MS = 250;
+    private static final Logger LOGGER = Logger.getLogger(DefaultMessageFilterService.class.getName());
 
     private final Cache<String> blockedCache;
 
@@ -25,7 +30,14 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
 
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
-        return blockedCache.get(connectionUniqueId.toString()).join().isPresent();
+        try {
+            return blockedCache.get(connectionUniqueId.toString())
+                    .get(CACHE_GET_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .isPresent();
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to read blocked state for " + connectionUniqueId, e);
+            return false;
+        }
     }
 
     @IdenticEvent
