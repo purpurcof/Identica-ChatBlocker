@@ -53,6 +53,7 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
             getLogger().warning("IdenticaAPI not available after " + attempt + " attempts, giving up");
             return;
         }
+
         long delay = (long) Math.pow(2, attempt) * 500;
         ProxyServer.getInstance().getScheduler().schedule(this, () -> initServices(attempt), delay, TimeUnit.MILLISECONDS);
     }
@@ -67,9 +68,11 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
                     ? "retrying in " + ((long) Math.pow(2, attempt + 1) * 500) + "ms"
                     : "giving up after " + attempt + " attempts";
             getLogger().warning("IdenticaAPI not initialized, " + delayMsg);
+
             if (attempt <= 5) {
                 scheduleInit(attempt + 1);
             }
+
             return;
         }
 
@@ -88,5 +91,4 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
 
         getLogger().info("Identica-ChatBlocker services ready");
     }
-
 }

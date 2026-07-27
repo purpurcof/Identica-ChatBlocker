@@ -17,12 +17,13 @@ import java.util.regex.Pattern;
 
 public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Reloadable {
 
+    private volatile Set<String> plainTextFragments = Collections.emptySet();
+
     private static final Logger LOGGER = Logger.getLogger(DefaultIdenticaMessageScanner.class.getName());
     private static final Pattern MINIMESSAGE_TAG = Pattern.compile("<[^>]+>");
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{[^}]+}");
-    private static final int MAX_RECURSION_DEPTH = 8;
 
-    private volatile Set<String> plainTextFragments = Collections.emptySet();
+    private static final int MAX_RECURSION_DEPTH = 8;
 
     @Override
     public void reload() {
@@ -41,6 +42,7 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
                 if (s == null || s.isBlank()) continue;
                 String cleaned = PLACEHOLDER.matcher(s).replaceAll("");
                 cleaned = MINIMESSAGE_TAG.matcher(cleaned).replaceAll("").strip();
+
                 if (cleaned.length() >= 3) {
                     fragments.add(cleaned);
                 }
@@ -82,6 +84,7 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
                 for (Object item : col) {
                     collectStrings(item, result, visited, depth + 1);
                 }
+
                 return;
             }
 
@@ -95,6 +98,7 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
                     if (!accessible) {
                         field.setAccessible(true);
                     }
+
                     Object value = field.get(obj);
                     collectStrings(value, result, visited, depth + 1);
                 } catch (SecurityException se) {
@@ -105,8 +109,7 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
                     if (!accessible) {
                         try {
                             field.setAccessible(false);
-                        } catch (Exception ignore) {
-                        }
+                        } catch (Exception ignore) {}
                     }
                 }
             }

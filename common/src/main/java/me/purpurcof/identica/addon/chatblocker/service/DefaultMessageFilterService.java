@@ -20,9 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class DefaultMessageFilterService implements MessageFilterService, EventListener {
 
-    private final ReplicatedCache<UUID> blockedCache;
-
     private final Set<UUID> blockedConnections = ConcurrentHashMap.newKeySet();
+
+    private final ReplicatedCache<UUID> blockedCache;
 
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {

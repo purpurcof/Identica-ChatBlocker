@@ -81,6 +81,7 @@ public class VelocityChatBlockerPlugin {
             logger.warn("IdenticaAPI not available after " + attempt + " attempts, giving up");
             return;
         }
+
         long delay = (long) Math.pow(2, attempt) * 500;
         server.getScheduler().buildTask(this, () -> initServices(attempt)).delay(delay, TimeUnit.MILLISECONDS).schedule();
     }
@@ -95,9 +96,11 @@ public class VelocityChatBlockerPlugin {
                     ? "retrying in " + ((long) Math.pow(2, attempt + 1) * 500) + "ms"
                     : "giving up after " + attempt + " attempts";
             logger.warn("IdenticaAPI not initialized, " + delayMsg);
+
             if (attempt <= 5) {
                 scheduleInit(attempt + 1);
             }
+
             return;
         }
 
@@ -116,5 +119,4 @@ public class VelocityChatBlockerPlugin {
 
         logger.info("Identica-ChatBlocker services ready");
     }
-
 }
