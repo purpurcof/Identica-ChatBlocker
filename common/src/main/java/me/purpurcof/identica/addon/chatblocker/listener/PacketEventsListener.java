@@ -4,6 +4,7 @@ import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import lombok.RequiredArgsConstructor;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -14,20 +15,13 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@RequiredArgsConstructor
 public class PacketEventsListener implements PacketListener {
 
     private static final Logger LOGGER = Logger.getLogger(PacketEventsListener.class.getName());
 
     private final Supplier<DefaultMessageFilterService> filterService;
     private final Supplier<DefaultIdenticaMessageScanner> messageScanner;
-
-    public PacketEventsListener(
-            Supplier<DefaultMessageFilterService> filterService,
-            Supplier<DefaultIdenticaMessageScanner> messageScanner
-    ) {
-        this.filterService = filterService;
-        this.messageScanner = messageScanner;
-    }
 
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {

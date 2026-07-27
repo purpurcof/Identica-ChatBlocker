@@ -1,5 +1,6 @@
 package me.purpurcof.identica.addon.chatblocker.service;
 
+import lombok.RequiredArgsConstructor;
 import me.whereareiam.identica.event.EventListener;
 import me.whereareiam.identica.event.base.IdenticEvent;
 import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
@@ -17,16 +18,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@RequiredArgsConstructor
 public class DefaultMessageFilterService implements MessageFilterService, EventListener {
 
     private static final long CACHE_GET_TIMEOUT_MS = 250;
     private static final Logger LOGGER = Logger.getLogger(DefaultMessageFilterService.class.getName());
 
     private final ReplicatedCache<UUID> blockedCache;
-
-    public DefaultMessageFilterService(ReplicatedCache<UUID> blockedCache) {
-        this.blockedCache = blockedCache;
-    }
 
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
