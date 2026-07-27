@@ -5,7 +5,11 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
 import me.purpurcof.identica.addon.chatblocker.listener.PacketEventsListener;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import me.whereareiam.identica.IdenticaAPI;
+import me.whereareiam.identica.Registry;
+import me.whereareiam.identica.Reloadable;
 import me.whereareiam.identica.model.replication.ReplicationType;
 import me.whereareiam.identica.replication.ReplicationSystem;
 import me.whereareiam.identica.replication.cache.ReplicatedCache;
@@ -79,6 +83,8 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
 
         messageScanner = new DefaultIdenticaMessageScanner();
         messageScanner.scan();
+
+        IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {})).register(messageScanner);
 
         getLogger().info("Identica-ChatBlocker services ready");
     }

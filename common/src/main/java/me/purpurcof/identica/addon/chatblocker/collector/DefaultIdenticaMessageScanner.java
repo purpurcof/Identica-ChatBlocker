@@ -1,6 +1,7 @@
 package me.purpurcof.identica.addon.chatblocker.collector;
 
 import me.whereareiam.identica.IdenticaAPI;
+import me.whereareiam.identica.Reloadable;
 import me.whereareiam.identica.model.config.Messages;
 
 import java.lang.reflect.Field;
@@ -14,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
+public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Reloadable {
 
     private static final Logger LOGGER = Logger.getLogger(DefaultIdenticaMessageScanner.class.getName());
     private static final Pattern MINIMESSAGE_TAG = Pattern.compile("<[^>]+>");
@@ -22,6 +23,11 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner {
     private static final int MAX_RECURSION_DEPTH = 8;
 
     private volatile Set<String> plainTextFragments = Collections.emptySet();
+
+    @Override
+    public void reload() {
+        scan();
+    }
 
     @Override
     public void scan() {

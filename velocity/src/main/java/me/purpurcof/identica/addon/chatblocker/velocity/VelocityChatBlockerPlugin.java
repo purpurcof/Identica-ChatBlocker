@@ -5,6 +5,8 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import me.purpurcof.identica.addon.chatblocker.listener.PacketEventsListener;
 import com.google.inject.Inject;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
@@ -14,6 +16,8 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
 import me.whereareiam.identica.IdenticaAPI;
+import me.whereareiam.identica.Registry;
+import me.whereareiam.identica.Reloadable;
 import me.whereareiam.identica.model.replication.ReplicationType;
 import me.whereareiam.identica.replication.ReplicationSystem;
 import me.whereareiam.identica.replication.cache.ReplicatedCache;
@@ -107,6 +111,8 @@ public class VelocityChatBlockerPlugin {
 
         messageScanner = new DefaultIdenticaMessageScanner();
         messageScanner.scan();
+
+        IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {})).register(messageScanner);
 
         logger.info("Identica-ChatBlocker services ready");
     }
