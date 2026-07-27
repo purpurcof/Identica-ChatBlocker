@@ -72,6 +72,7 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
 
     @IdenticEvent
     public void onMigrationResolved(MigrationResolvedEvent event) {
-        blockedCache.invalidate(event.getConnectionUniqueId().toString());
+        UUID connectionId = event.getConnectionUniqueId();
+        blockedCache.invalidate(connectionId.toString());
     }
 }
