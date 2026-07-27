@@ -12,7 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -35,7 +34,6 @@ class DefaultMessageFilterServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(blockedCache.get(any())).thenReturn(CompletableFuture.completedFuture(Optional.empty()));
         when(blockedCache.put(any(), any(), anyLong())).thenReturn(CompletableFuture.completedFuture(null));
         when(blockedCache.invalidate(any())).thenReturn(CompletableFuture.completedFuture(null));
     }
@@ -83,12 +81,10 @@ class DefaultMessageFilterServiceTest {
 
         assertFalse(service.isBlocked(connectionId));
 
-        when(blockedCache.get(eq(connectionId.toString())))
-                .thenReturn(CompletableFuture.completedFuture(Optional.of(connectionId)));
+        service.onAuthenticationRequired(authRequired(connectionId));
         assertTrue(service.isBlocked(connectionId));
 
-        when(blockedCache.get(eq(connectionId.toString())))
-                .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+        service.onAuthenticationResolved(authResolved(connectionId));
         assertFalse(service.isBlocked(connectionId));
     }
 
@@ -100,6 +96,7 @@ class DefaultMessageFilterServiceTest {
         service.onAuthenticationRequired(authRequired(connectionId));
 
         verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId));
+        assertTrue(service.isBlocked(connectionId));
     }
 
     @DisplayName("Invalidates connectionId on AuthenticationResolved")
@@ -112,64 +109,44 @@ class DefaultMessageFilterServiceTest {
         verify(blockedCache).invalidate(eq(connectionId.toString()));
     }
 
-    @DisplayName("Puts connectionId on RegistrationRequired")
+    @DisplayName("Adds to local set on RegistrationRequired")
     @Test
-    void putsOnRegistrationRequired() {
+    void addsLocalOnRegistrationRequired() {
         UUID connectionId = UUID.randomUUID();
 
         service.onRegistrationRequired(regRequired(connectionId));
 
-        verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId));
+        assertTrue(service.isBlocked(connectionId));
     }
 
-    @DisplayName("Invalidates connectionId on RegistrationResolved")
+    @DisplayName("Removes from local set on RegistrationResolved")
     @Test
-    void invalidatesOnRegistrationResolved() {
+    void removesLocalOnRegistrationResolved() {
         UUID connectionId = UUID.randomUUID();
+        service.onRegistrationRequired(regRequired(connectionId));
 
         service.onRegistrationResolved(regResolved(connectionId));
-
-        verify(blockedCache).invalidate(eq(connectionId.toString()));
-    }
-
-    @DisplayName("Puts connectionId on MigrationRequired")
-    @Test
-    void putsOnMigrationRequired() {
-        UUID connectionId = UUID.randomUUID();
-
-        service.onMigrationRequired(migRequired(connectionId));
-
-        verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId));
-    }
-
-    @DisplayName("Invalidates connectionId on MigrationResolved")
-    @Test
-    void invalidatesOnMigrationResolved() {
-        UUID connectionId = UUID.randomUUID();
-
-        service.onMigrationResolved(migResolved(connectionId));
-
-        verify(blockedCache).invalidate(eq(connectionId.toString()));
-    }
-
-    @DisplayName("Returns false when cache get times out")
-    @Test
-    void isBlockedReturnsFalseOnCacheTimeout() {
-        UUID connectionId = UUID.randomUUID();
-
-        when(blockedCache.get(any())).thenReturn(new CompletableFuture<>());
 
         assertFalse(service.isBlocked(connectionId));
     }
 
-    @DisplayName("Returns false when cache get throws exception")
+    @DisplayName("Adds to local set on MigrationRequired")
     @Test
-    void isBlockedReturnsFalseOnCacheException() {
+    void addsLocalOnMigrationRequired() {
         UUID connectionId = UUID.randomUUID();
 
-        CompletableFuture<Optional<UUID>> failed = new CompletableFuture<>();
-        failed.completeExceptionally(new RuntimeException("cache unavailable"));
-        when(blockedCache.get(any())).thenReturn(failed);
+        service.onMigrationRequired(migRequired(connectionId));
+
+        assertTrue(service.isBlocked(connectionId));
+    }
+
+    @DisplayName("Removes from local set on MigrationResolved")
+    @Test
+    void removesLocalOnMigrationResolved() {
+        UUID connectionId = UUID.randomUUID();
+        service.onMigrationRequired(migRequired(connectionId));
+
+        service.onMigrationResolved(migResolved(connectionId));
 
         assertFalse(service.isBlocked(connectionId));
     }
