@@ -3,7 +3,7 @@ package me.purpurcof.identica.addon.chatblocker;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
 import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
 import me.whereareiam.identica.event.scenario.authentication.AuthenticationResolvedEvent;
-import me.whereareiam.identica.replication.cache.base.Cache;
+import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 class DefaultMessageFilterServiceTest {
 
     @SuppressWarnings("unchecked")
-    private final Cache<String> blockedCache = (Cache<String>) mock(Cache.class);
+    private final ReplicatedCache<UUID> blockedCache = (ReplicatedCache<UUID>) mock(ReplicatedCache.class);
 
     private final DefaultMessageFilterService service = new DefaultMessageFilterService(blockedCache);
 
@@ -56,7 +56,7 @@ class DefaultMessageFilterServiceTest {
         assertFalse(service.isBlocked(connectionId));
 
         when(blockedCache.get(eq(connectionId.toString())))
-                .thenReturn(CompletableFuture.completedFuture(Optional.of("1")));
+                .thenReturn(CompletableFuture.completedFuture(Optional.of(connectionId)));
         assertTrue(service.isBlocked(connectionId));
 
         when(blockedCache.get(eq(connectionId.toString())))
@@ -71,7 +71,7 @@ class DefaultMessageFilterServiceTest {
 
         service.onAuthenticationRequired(authRequired(connectionId));
 
-        verify(blockedCache).put(eq(connectionId.toString()), eq("1"), anyLong());
+        verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId), anyLong());
     }
 
     @DisplayName("Invalidates connectionId on AuthenticationResolved")

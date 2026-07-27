@@ -12,6 +12,7 @@ import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class BungeeCordChatBlockerPlugin extends Plugin {
@@ -43,10 +44,10 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
         }
 
         ReplicationSystem replicationSystem = IdenticaAPI.getReplicationSystem();
-        ReplicatedCache<String> blockedCache = replicationSystem
+        ReplicatedCache<UUID> blockedCache = replicationSystem
                 .cache("chatblocker:blocked")
                 .defaultTtl(300_000)
-                .replicated(ReplicationType.identity(String.class));
+                .replicated(ReplicationType.identity(UUID.class));
         filterService = new DefaultMessageFilterService(blockedCache);
         IdenticaAPI.getEventManager().register(filterService);
 

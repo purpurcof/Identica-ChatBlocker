@@ -18,6 +18,7 @@ import me.whereareiam.identica.replication.ReplicationSystem;
 import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import org.slf4j.Logger;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(
@@ -73,10 +74,10 @@ public class VelocityChatBlockerPlugin {
         }
 
         ReplicationSystem replicationSystem = IdenticaAPI.getReplicationSystem();
-        ReplicatedCache<String> blockedCache = replicationSystem
+        ReplicatedCache<UUID> blockedCache = replicationSystem
                 .cache("chatblocker:blocked")
                 .defaultTtl(300_000)
-                .replicated(ReplicationType.identity(String.class));
+                .replicated(ReplicationType.identity(UUID.class));
         filterService = new DefaultMessageFilterService(blockedCache);
         IdenticaAPI.getEventManager().register(filterService);
 
