@@ -3,6 +3,7 @@ package me.purpurcof.identica.addon.chatblocker.service;
 import lombok.RequiredArgsConstructor;
 import me.whereareiam.identica.event.EventListener;
 import me.whereareiam.identica.event.base.IdenticEvent;
+import me.whereareiam.identica.type.event.EventOrder;
 import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
 import me.whereareiam.identica.event.scenario.authentication.AuthenticationResolvedEvent;
 import me.whereareiam.identica.event.scenario.registration.RegistrationRequiredEvent;
@@ -43,37 +44,37 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
         }
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onAuthenticationRequired(AuthenticationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.put(connectionId.toString(), connectionId);
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onAuthenticationResolved(AuthenticationResolvedEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.invalidate(connectionId.toString());
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onRegistrationRequired(RegistrationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.put(connectionId.toString(), connectionId);
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onRegistrationResolved(RegistrationResolvedEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.invalidate(connectionId.toString());
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onMigrationRequired(MigrationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.put(connectionId.toString(), connectionId);
     }
 
-    @IdenticEvent
+    @IdenticEvent(EventOrder.HIGH)
     public void onMigrationResolved(MigrationResolvedEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
         blockedCache.invalidate(connectionId.toString());
