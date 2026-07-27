@@ -26,6 +26,7 @@ public class PacketEventsListener implements PacketListener {
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {
         if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
+        if (event.isCancelled()) return;
 
         DefaultMessageFilterService filter = filterService.get();
         DefaultIdenticaMessageScanner scanner = messageScanner.get();
