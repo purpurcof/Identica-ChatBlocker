@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 
 public class DefaultMessageFilterService implements MessageFilterService, EventListener {
 
-    private static final long DEFAULT_TTL_MS = 300_000;
     private static final long CACHE_GET_TIMEOUT_MS = 250;
     private static final Logger LOGGER = Logger.getLogger(DefaultMessageFilterService.class.getName());
 
@@ -49,7 +48,7 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
     @IdenticEvent
     public void onAuthenticationRequired(AuthenticationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
-        blockedCache.put(connectionId.toString(), connectionId, DEFAULT_TTL_MS);
+        blockedCache.put(connectionId.toString(), connectionId);
     }
 
     @IdenticEvent
@@ -61,7 +60,7 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
     @IdenticEvent
     public void onRegistrationRequired(RegistrationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
-        blockedCache.put(connectionId.toString(), connectionId, DEFAULT_TTL_MS);
+        blockedCache.put(connectionId.toString(), connectionId);
     }
 
     @IdenticEvent
@@ -73,7 +72,7 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
     @IdenticEvent
     public void onMigrationRequired(MigrationRequiredEvent event) {
         UUID connectionId = event.getConnectionUniqueId();
-        blockedCache.put(connectionId.toString(), connectionId, DEFAULT_TTL_MS);
+        blockedCache.put(connectionId.toString(), connectionId);
     }
 
     @IdenticEvent
