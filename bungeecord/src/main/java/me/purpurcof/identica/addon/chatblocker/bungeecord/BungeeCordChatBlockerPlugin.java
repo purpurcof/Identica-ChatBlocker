@@ -30,7 +30,11 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
                 PacketListenerPriority.NORMAL
         );
 
-        ProxyServer.getInstance().getScheduler().schedule(this, this::initServices, 2, TimeUnit.SECONDS);
+        if (IdenticaAPI.isInitialized()) {
+            initServices();
+        } else {
+            ProxyServer.getInstance().getScheduler().schedule(this, this::initServices, 2, TimeUnit.SECONDS);
+        }
 
         getLogger().info("Identica-ChatBlocker initialized");
     }

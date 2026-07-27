@@ -58,9 +58,13 @@ public class VelocityChatBlockerPlugin {
                 PacketListenerPriority.NORMAL
         );
 
-        server.getScheduler().buildTask(this, this::initServices)
-                .delay(2, TimeUnit.SECONDS)
-                .schedule();
+        if (IdenticaAPI.isInitialized()) {
+            initServices();
+        } else {
+            server.getScheduler().buildTask(this, this::initServices)
+                    .delay(2, TimeUnit.SECONDS)
+                    .schedule();
+        }
 
         logger.info("Identica-ChatBlocker initialized");
     }
