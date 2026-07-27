@@ -71,7 +71,7 @@ class DefaultMessageFilterServiceTest {
 
         service.onAuthenticationRequired(authRequired(connectionId));
 
-        verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId), anyLong());
+        verify(blockedCache).put(eq(connectionId.toString()), eq(connectionId));
     }
 
     @DisplayName("Invalidates connectionId on AuthenticationResolved")
