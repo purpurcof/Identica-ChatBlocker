@@ -11,6 +11,7 @@ import me.whereareiam.identica.event.scenario.migration.MigrationResolvedEvent;
 import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -31,11 +32,16 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
         try {
-            return blockedCache.get(connectionUniqueId.toString())
-                    .get(CACHE_GET_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                    .isPresent();
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to read blocked state for " + connectionUniqueId, e);
+            Optional<UUID> result = blockedCache.get(connectionUniqueId.toString())
+                    .completeOnTimeout(Optional.empty(), CACHE_GET_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    .exceptionally(ex -> {
+                        LOGGER.log(Level.FINE, "Cache read failed for " + connectionUniqueId, ex);
+                        return Optional.empty();
+                    })
+                    .join();
+            return result.isPresent();
+        } catch (Throwable t) {
+            LOGGER.log(Level.WARNING, "Unexpected error reading blocked state for " + connectionUniqueId, t);
             return false;
         }
     }
