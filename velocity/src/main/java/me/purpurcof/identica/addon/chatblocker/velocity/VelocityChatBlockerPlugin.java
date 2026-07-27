@@ -9,6 +9,7 @@ import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
+import lombok.Getter;
 import com.velocitypowered.api.proxy.ProxyServer;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
@@ -36,7 +37,9 @@ public class VelocityChatBlockerPlugin {
 
     private final Logger logger;
     private final ProxyServer server;
+    @Getter
     private DefaultMessageFilterService filterService;
+    @Getter
     private DefaultIdenticaMessageScanner messageScanner;
 
     @Inject
@@ -87,11 +90,4 @@ public class VelocityChatBlockerPlugin {
         logger.info("Identica-ChatBlocker services ready");
     }
 
-    public DefaultMessageFilterService getFilterService() {
-        return filterService;
-    }
-
-    public DefaultIdenticaMessageScanner getMessageScanner() {
-        return messageScanner;
-    }
 }

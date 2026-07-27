@@ -9,6 +9,7 @@ import me.whereareiam.identica.IdenticaAPI;
 import me.whereareiam.identica.model.replication.ReplicationType;
 import me.whereareiam.identica.replication.ReplicationSystem;
 import me.whereareiam.identica.replication.cache.ReplicatedCache;
+import lombok.Getter;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -17,7 +18,9 @@ import java.util.concurrent.TimeUnit;
 
 public class BungeeCordChatBlockerPlugin extends Plugin {
 
+    @Getter
     private DefaultMessageFilterService filterService;
+    @Getter
     private DefaultIdenticaMessageScanner messageScanner;
 
     @Override
@@ -57,11 +60,4 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
         getLogger().info("Identica-ChatBlocker services ready");
     }
 
-    public DefaultMessageFilterService getFilterService() {
-        return filterService;
-    }
-
-    public DefaultIdenticaMessageScanner getMessageScanner() {
-        return messageScanner;
-    }
 }
