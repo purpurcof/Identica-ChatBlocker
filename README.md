@@ -18,8 +18,9 @@ Addon-plugin for [Identica](https://github.com/whereareiam/Identica) that blocks
 
 ### Requirements
 
-* **Identica:** 3.0.0+
-* **Dependencies:** [packetevents](https://github.com/retrooper/packetevents) 2.12.2
+* **Dependencies:**
+  * [Identica 3.0.0](https://github.com/whereareiam/Identica)
+  * [packetevents 2.12.3](https://github.com/retrooper/packetevents)
 * **Platforms:**
   * Velocity
   * BungeeCord (untested, may work)
