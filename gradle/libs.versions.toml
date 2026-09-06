@@ -39,10 +39,11 @@ attache-standalone = { group = "me.whereareiam", name = "attache-standalone", ve
 attache-velocity = { group = "me.whereareiam", name = "attache-velocity", version.ref = "attache" }
 attache-bungeecord = { group = "me.whereareiam", name = "attache-bungeecord", version.ref = "attache" }
 
-shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "shadow-gradle-plugin", version.ref = "shadow" }
 packetevents-api = { group = "com.github.retrooper", name = "packetevents-api", version.ref = "packetevents" }
 packetevents-velocity = { group = "com.github.retrooper", name = "packetevents-velocity", version.ref = "packetevents" }
 packetevents-bungeecord = { group = "com.github.retrooper", name = "packetevents-bungeecord", version.ref = "packetevents" }
+
+shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "shadow-gradle-plugin", version.ref = "shadow" }
 
 [plugins]
 attache = { id = "me.whereareiam.attache", version.ref = "attache" }
