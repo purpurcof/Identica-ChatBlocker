@@ -2,7 +2,8 @@ package me.purpurcof.identica.addon.chatblocker.listener;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import lombok.RequiredArgsConstructor;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
@@ -25,14 +26,15 @@ public class PacketEventsListener implements PacketListener {
 
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {
-        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
+        if (!isChatPacket(event)) return;
         if (event.isCancelled()) return;
 
         DefaultMessageFilterService filter = filterService.get();
         DefaultIdenticaMessageScanner scanner = messageScanner.get();
         if (filter == null || scanner == null) return;
 
-        UUID playerUUID = event.getUser().getUUID();
+        UUID playerUUID = event.getUser() != null ? event.getUser().getUUID() : null;
+        if (playerUUID == null) return;
         if (!filter.isBlocked(playerUUID)) return;
 
         String text = extractText(event);
@@ -44,10 +46,26 @@ public class PacketEventsListener implements PacketListener {
         }
     }
 
+    private boolean isChatPacket(PacketSendEvent event) {
+        String name = event.getPacketType().getName();
+        return name.equals("SYSTEM_CHAT_MESSAGE")
+                || name.equals("CHAT_MESSAGE")
+                || name.equals("DISGUISED_CHAT");
+    }
+
     private String extractText(PacketSendEvent event) {
         try {
-            if (event.getPacketType() == PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) {
+            String name = event.getPacketType().getName();
+            if (name.equals("SYSTEM_CHAT_MESSAGE")) {
                 WrapperPlayServerSystemChatMessage wrapper = new WrapperPlayServerSystemChatMessage(event);
+                return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage());
+            }
+            if (name.equals("CHAT_MESSAGE")) {
+                WrapperPlayServerChatMessage wrapper = new WrapperPlayServerChatMessage(event);
+                return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage().getChatContent());
+            }
+            if (name.equals("DISGUISED_CHAT")) {
+                WrapperPlayServerDisguisedChat wrapper = new WrapperPlayServerDisguisedChat(event);
                 return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage());
             }
         } catch (Exception e) {

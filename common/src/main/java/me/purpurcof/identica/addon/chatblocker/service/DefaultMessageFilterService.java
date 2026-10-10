@@ -10,7 +10,6 @@ import me.whereareiam.identica.event.scenario.registration.RegistrationRequiredE
 import me.whereareiam.identica.event.scenario.registration.RegistrationResolvedEvent;
 import me.whereareiam.identica.event.scenario.migration.MigrationRequiredEvent;
 import me.whereareiam.identica.event.scenario.migration.MigrationResolvedEvent;
-import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Set;
@@ -22,8 +21,6 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
 
     private final Set<UUID> blockedConnections = ConcurrentHashMap.newKeySet();
 
-    private final ReplicatedCache<UUID> blockedCache;
-
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
         return blockedConnections.contains(connectionUniqueId);
@@ -31,43 +28,31 @@ public class DefaultMessageFilterService implements MessageFilterService, EventL
 
     @IdenticEvent(EventOrder.HIGH)
     public void onAuthenticationRequired(AuthenticationRequiredEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.add(connectionId);
-        blockedCache.put(connectionId.toString(), connectionId);
+        blockedConnections.add(event.getConnectionUniqueId());
     }
 
     @IdenticEvent(EventOrder.HIGH)
     public void onAuthenticationResolved(AuthenticationResolvedEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.remove(connectionId);
-        blockedCache.invalidate(connectionId.toString());
+        blockedConnections.remove(event.getConnectionUniqueId());
     }
 
     @IdenticEvent(EventOrder.HIGH)
     public void onRegistrationRequired(RegistrationRequiredEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.add(connectionId);
-        blockedCache.put(connectionId.toString(), connectionId);
+        blockedConnections.add(event.getConnectionUniqueId());
     }
 
     @IdenticEvent(EventOrder.HIGH)
     public void onRegistrationResolved(RegistrationResolvedEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.remove(connectionId);
-        blockedCache.invalidate(connectionId.toString());
+        blockedConnections.remove(event.getConnectionUniqueId());
     }
 
     @IdenticEvent(EventOrder.HIGH)
     public void onMigrationRequired(MigrationRequiredEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.add(connectionId);
-        blockedCache.put(connectionId.toString(), connectionId);
+        blockedConnections.add(event.getConnectionUniqueId());
     }
 
     @IdenticEvent(EventOrder.HIGH)
     public void onMigrationResolved(MigrationResolvedEvent event) {
-        UUID connectionId = event.getConnectionUniqueId();
-        blockedConnections.remove(connectionId);
-        blockedCache.invalidate(connectionId.toString());
+        blockedConnections.remove(event.getConnectionUniqueId());
     }
 }

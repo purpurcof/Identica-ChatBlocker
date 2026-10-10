@@ -10,22 +10,18 @@ import com.google.inject.TypeLiteral;
 import me.whereareiam.identica.IdenticaAPI;
 import me.whereareiam.identica.Registry;
 import me.whereareiam.identica.Reloadable;
-import me.whereareiam.identica.model.replication.ReplicationType;
-import me.whereareiam.identica.replication.ReplicationSystem;
-import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import lombok.Getter;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.plugin.Plugin;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class BungeeCordChatBlockerPlugin extends Plugin {
 
     @Getter
-    private DefaultMessageFilterService filterService;
+    private volatile DefaultMessageFilterService filterService;
     @Getter
-    private DefaultIdenticaMessageScanner messageScanner;
+    private volatile DefaultIdenticaMessageScanner messageScanner;
 
     @Override
     public void onEnable() {
@@ -39,8 +35,6 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
         } else {
             scheduleInit(0);
         }
-
-        getLogger().info("Identica-ChatBlocker initialized");
     }
 
     @Override
@@ -49,7 +43,7 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
     }
 
     private void scheduleInit(int attempt) {
-        if (attempt > 5) {
+        if (attempt >= 5) {
             getLogger().warning("IdenticaAPI not available after " + attempt + " attempts, giving up");
             return;
         }
@@ -64,24 +58,17 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
 
     private void initServices(int attempt) {
         if (!IdenticaAPI.isInitialized()) {
-            String delayMsg = attempt <= 5
-                    ? "retrying in " + ((long) Math.pow(2, attempt + 1) * 500) + "ms"
-                    : "giving up after " + attempt + " attempts";
-            getLogger().warning("IdenticaAPI not initialized, " + delayMsg);
-
-            if (attempt <= 5) {
+            if (attempt < 5) {
+                getLogger().warning("IdenticaAPI not initialized, retrying in " + ((long) Math.pow(2, attempt + 1) * 500) + "ms");
                 scheduleInit(attempt + 1);
+            } else {
+                getLogger().warning("IdenticaAPI not initialized, giving up after " + attempt + " attempts");
             }
 
             return;
         }
 
-        ReplicationSystem replicationSystem = IdenticaAPI.getReplicationSystem();
-        ReplicatedCache<UUID> blockedCache = replicationSystem
-                .cache("chatblocker:blocked")
-                .defaultTtl(300_000)
-                .replicated(ReplicationType.identity(UUID.class));
-        filterService = new DefaultMessageFilterService(blockedCache);
+        filterService = new DefaultMessageFilterService();
         IdenticaAPI.getEventManager().register(filterService);
 
         messageScanner = new DefaultIdenticaMessageScanner();
@@ -89,6 +76,6 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
 
         IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {})).register(messageScanner);
 
-        getLogger().info("Identica-ChatBlocker services ready");
+        getLogger().info("Identica-ChatBlocker initialized");
     }
 }
