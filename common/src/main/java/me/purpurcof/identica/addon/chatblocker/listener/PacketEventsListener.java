@@ -2,7 +2,8 @@ package me.purpurcof.identica.addon.chatblocker.listener;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
-import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
 import lombok.RequiredArgsConstructor;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
@@ -25,7 +26,7 @@ public class PacketEventsListener implements PacketListener {
 
     @Override
     public void onPacketSend(@NotNull PacketSendEvent event) {
-        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) return;
+        if (!isChatPacket(event)) return;
         if (event.isCancelled()) return;
 
         DefaultMessageFilterService filter = filterService.get();
@@ -44,11 +45,31 @@ public class PacketEventsListener implements PacketListener {
         }
     }
 
+    private boolean isChatPacket(PacketSendEvent event) {
+        String name = event.getPacketType().getName();
+        return name.equals("SYSTEM_CHAT_MESSAGE")
+                || name.equals("CHAT_MESSAGE")
+                || name.equals("DISGUISED_CHAT");
+    }
+
     private String extractText(PacketSendEvent event) {
         try {
-            if (event.getPacketType() == PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) {
-                WrapperPlayServerSystemChatMessage wrapper = new WrapperPlayServerSystemChatMessage(event);
-                return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage());
+            String name = event.getPacketType().getName();
+            switch (name) {
+                case "SYSTEM_CHAT_MESSAGE" -> {
+                    WrapperPlayServerSystemChatMessage wrapper = new WrapperPlayServerSystemChatMessage(event);
+                    return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage());
+                }
+
+                case "CHAT_MESSAGE" -> {
+                    WrapperPlayServerChatMessage wrapper = new WrapperPlayServerChatMessage(event);
+                    return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage().getChatContent());
+                }
+
+                case "DISGUISED_CHAT" -> {
+                    WrapperPlayServerDisguisedChat wrapper = new WrapperPlayServerDisguisedChat(event);
+                    return PlainTextComponentSerializer.plainText().serialize(wrapper.getMessage());
+                }
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to extract chat text", e);

@@ -18,12 +18,8 @@ import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterServi
 import me.whereareiam.identica.IdenticaAPI;
 import me.whereareiam.identica.Registry;
 import me.whereareiam.identica.Reloadable;
-import me.whereareiam.identica.model.replication.ReplicationType;
-import me.whereareiam.identica.replication.ReplicationSystem;
-import me.whereareiam.identica.replication.cache.ReplicatedCache;
 import org.slf4j.Logger;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Plugin(
@@ -42,9 +38,9 @@ public class VelocityChatBlockerPlugin {
     private final Logger logger;
     private final ProxyServer server;
     @Getter
-    private DefaultMessageFilterService filterService;
+    private volatile DefaultMessageFilterService filterService;
     @Getter
-    private DefaultIdenticaMessageScanner messageScanner;
+    private volatile DefaultIdenticaMessageScanner messageScanner;
 
     @Inject
     public VelocityChatBlockerPlugin(
@@ -67,8 +63,6 @@ public class VelocityChatBlockerPlugin {
         } else {
             scheduleInit(0);
         }
-
-        logger.info("Identica-ChatBlocker initialized");
     }
 
     @Subscribe
@@ -77,8 +71,8 @@ public class VelocityChatBlockerPlugin {
     }
 
     private void scheduleInit(int attempt) {
-        if (attempt > 5) {
-            logger.warn("IdenticaAPI not available after " + attempt + " attempts, giving up");
+        if (attempt >= 5) {
+            logger.warn("IdenticaAPI not available after {} attempts, giving up", attempt);
             return;
         }
 
@@ -92,24 +86,17 @@ public class VelocityChatBlockerPlugin {
 
     private void initServices(int attempt) {
         if (!IdenticaAPI.isInitialized()) {
-            String delayMsg = attempt <= 5
-                    ? "retrying in " + ((long) Math.pow(2, attempt + 1) * 500) + "ms"
-                    : "giving up after " + attempt + " attempts";
-            logger.warn("IdenticaAPI not initialized, " + delayMsg);
-
-            if (attempt <= 5) {
+            if (attempt < 5) {
+                logger.warn("IdenticaAPI not initialized, retrying in {}ms", (long) Math.pow(2, attempt + 1) * 500);
                 scheduleInit(attempt + 1);
+            } else {
+                logger.warn("IdenticaAPI not initialized, giving up after {} attempts", attempt);
             }
 
             return;
         }
 
-        ReplicationSystem replicationSystem = IdenticaAPI.getReplicationSystem();
-        ReplicatedCache<UUID> blockedCache = replicationSystem
-                .cache("chatblocker:blocked")
-                .defaultTtl(300_000)
-                .replicated(ReplicationType.identity(UUID.class));
-        filterService = new DefaultMessageFilterService(blockedCache);
+        filterService = new DefaultMessageFilterService();
         IdenticaAPI.getEventManager().register(filterService);
 
         messageScanner = new DefaultIdenticaMessageScanner();
@@ -117,6 +104,6 @@ public class VelocityChatBlockerPlugin {
 
         IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {})).register(messageScanner);
 
-        logger.info("Identica-ChatBlocker services ready");
+        logger.info("Identica-ChatBlocker initialized");
     }
 }
