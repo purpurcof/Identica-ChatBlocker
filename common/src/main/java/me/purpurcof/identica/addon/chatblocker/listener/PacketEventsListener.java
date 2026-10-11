@@ -2,6 +2,8 @@ package me.purpurcof.identica.addon.chatblocker.listener;
 
 import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.protocol.player.User;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerDisguisedChat;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
@@ -33,16 +35,39 @@ public class PacketEventsListener implements PacketListener {
         DefaultIdenticaMessageScanner scanner = messageScanner.get();
         if (filter == null || scanner == null) return;
 
-        UUID playerUUID = event.getUser().getUUID();
+        User user = event.getUser();
+        UUID playerUUID = user.getUUID();
         if (!filter.isBlocked(playerUUID)) return;
+
+        if (isPlayerChat(event, user)) {
+            // chat from other players or the server is never an Identica message
+            cancel(event, playerUUID);
+            return;
+        }
+
+        // without any message templates Identica's own messages cannot be told apart, so filtering would hide them
+        if (!scanner.isReady()) return;
 
         String text = extractText(event);
         if (text == null) return;
 
-        if (!scanner.matchesAny(text)) {
-            LOGGER.log(Level.FINE, "Blocked chat packet for {0}: {1}", new Object[]{playerUUID, text});
-            event.setCancelled(true);
-        }
+        if (!scanner.matchesAny(text)) cancel(event, playerUUID);
+    }
+
+    private static boolean isPlayerChat(PacketSendEvent event, User user) {
+        String name = event.getPacketType().getName();
+        if (name.equals("DISGUISED_CHAT")) return true;
+        if (!name.equals("CHAT_MESSAGE")) return false;
+
+        ClientVersion version = user.getClientVersion();
+        if (version == null) return false;
+        return version.isNewerThanOrEquals(ClientVersion.V_1_19);
+    }
+
+    private static void cancel(PacketSendEvent event, UUID playerUUID) {
+        // the text is deliberately not logged: it can be another player's private message
+        LOGGER.log(Level.FINE, "Blocked {0} packet for {1}", new Object[]{event.getPacketType().getName(), playerUUID});
+        event.setCancelled(true);
     }
 
     private boolean isChatPacket(PacketSendEvent event) {

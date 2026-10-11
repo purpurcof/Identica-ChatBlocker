@@ -1,6 +1,6 @@
 name: Identica-ChatBlocker
 main: me.purpurcof.identica.addon.chatblocker.bungeecord.BungeeCordChatBlockerPlugin
-version: 1.0.0
+version: ${version}
 author: purpurcof
 depends:
 - Identica

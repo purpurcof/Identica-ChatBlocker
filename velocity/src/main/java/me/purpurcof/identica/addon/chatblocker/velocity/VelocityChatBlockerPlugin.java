@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @Plugin(
         id = "identica-chatblocker",
         name = "Identica-ChatBlocker",
-        version = "1.0.0",
+        version = BuildConstants.VERSION,
         description = "Blocks chat messages during authentication",
         authors = {"purpurcof"},
         dependencies = {
