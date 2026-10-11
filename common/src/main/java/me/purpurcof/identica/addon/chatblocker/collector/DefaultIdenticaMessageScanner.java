@@ -5,7 +5,6 @@ import com.google.inject.Key;
 import com.google.inject.Binding;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
-import me.whereareiam.configura.ConfigDocument;
 import me.whereareiam.identica.IdenticaAPI;
 import me.whereareiam.identica.Registry;
 import me.whereareiam.identica.Reloadable;
@@ -120,7 +119,7 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
             try {
                 Type type = key.getTypeLiteral().getType();
                 if (!(type instanceof Class<?> clazz)) continue;
-                if (!ConfigDocument.class.isAssignableFrom(clazz)) continue;
+                if (!clazz.getPackageName().startsWith("me.whereareiam.identica.model.config")) continue;
 
                 addDistinct(beans, binding.getProvider().get());
             } catch (Exception e) {
