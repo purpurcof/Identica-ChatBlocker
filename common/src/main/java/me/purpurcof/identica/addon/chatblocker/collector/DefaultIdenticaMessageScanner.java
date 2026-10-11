@@ -3,17 +3,22 @@ package me.purpurcof.identica.addon.chatblocker.collector;
 import com.google.inject.Injector;
 import com.google.inject.Key;
 import com.google.inject.Binding;
+import com.google.inject.Provider;
+import com.google.inject.TypeLiteral;
 import me.whereareiam.configura.ConfigDocument;
 import me.whereareiam.identica.IdenticaAPI;
+import me.whereareiam.identica.Registry;
 import me.whereareiam.identica.Reloadable;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -31,6 +36,8 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     private static final int MAX_RECURSION_DEPTH = 8;
     private static final int MIN_LITERAL_LENGTH = 8;
     private static final int MAX_PLACEHOLDER_GAP = 64;
+    // far above what a legitimate match needs (a few thousand steps), far below what a pathological one burns
+    private static final long MAX_MATCH_STEPS = 2_000_000L;
 
     @Override
     public void reload() {
@@ -41,7 +48,9 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     public void scan() {
         try {
             Set<String> rawStrings = new HashSet<>();
-            collectFromAllMessageBeans(rawStrings);
+            for (Object bean : loadMessageBeans()) {
+                collectStrings(bean, rawStrings);
+            }
 
             Set<Pattern> compiled = new HashSet<>();
             for (String s : rawStrings) {
@@ -63,16 +72,43 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     }
 
     @Override
+    public boolean isReady() {
+        return !patterns.isEmpty();
+    }
+
+    @Override
     public boolean matchesAny(String plainText) {
         if (plainText == null || plainText.isEmpty()) return false;
-        for (Pattern pattern : patterns) {
-            if (pattern.matcher(plainText).find()) return true;
+
+        BoundedCharSequence bounded = new BoundedCharSequence(plainText, MAX_MATCH_STEPS);
+        try {
+            for (Pattern pattern : patterns) {
+                if (pattern.matcher(bounded).find()) return true;
+            }
+        } catch (BoundedCharSequence.BudgetExceededException e) {
+            LOGGER.log(Level.FINE, "Message matching exceeded its step budget; treating it as not an Identica message");
         }
 
         return false;
     }
 
-    private void collectFromAllMessageBeans(Set<String> result) {
+    /**
+     * Every message bean Identica has loaded.
+     *
+     * <p>Two sources are needed: the root injector knows the core beans, but provider modules (credential,
+     * premium, ...) live in <em>child</em> injectors whose bindings the root injector does not list. Those
+     * beans are reachable through the config providers that registered themselves as reloadables.
+     */
+    protected Collection<Object> loadMessageBeans() {
+        List<Object> beans = new ArrayList<>();
+
+        collectFromRootInjector(beans);
+        collectFromRegisteredProviders(beans);
+
+        return beans;
+    }
+
+    private void collectFromRootInjector(List<Object> beans) {
         Injector injector = IdenticaAPI.getService(Injector.class);
         Map<Key<?>, Binding<?>> bindings = injector.getAllBindings();
 
@@ -85,14 +121,39 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
                 if (!(type instanceof Class<?> clazz)) continue;
                 if (!ConfigDocument.class.isAssignableFrom(clazz)) continue;
 
-                Object instance = binding.getProvider().get();
-                if (instance == null) continue;
-
-                collectStrings(instance, result);
+                addDistinct(beans, binding.getProvider().get());
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING, "Failed to get message bean: " + key, e);
             }
         }
+    }
+
+    private void collectFromRegisteredProviders(List<Object> beans) {
+        try {
+            Registry<Reloadable> registry = IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {}));
+            for (Reloadable reloadable : registry.values()) {
+                // every config provider registers itself here and exposes its current bean through get()
+                if (!(reloadable instanceof Provider<?> provider)) continue;
+
+                try {
+                    Object bean = provider.get();
+                    if (bean != null && bean.getClass().getSimpleName().endsWith("Messages")) addDistinct(beans, bean);
+                } catch (RuntimeException e) {
+                    LOGGER.log(Level.FINE, "Skipping config provider " + reloadable.getClass().getName(), e);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Failed to read the registered config providers", e);
+        }
+    }
+
+    private static void addDistinct(List<Object> beans, Object bean) {
+        if (bean == null) return;
+        for (Object existing : beans) {
+            if (existing == bean) return;
+        }
+
+        beans.add(bean);
     }
 
     private Pattern compileTemplate(String template) {
