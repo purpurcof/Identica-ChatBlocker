@@ -1,58 +1,23 @@
 package me.purpurcof.identica.addon.chatblocker.service;
 
 import lombok.RequiredArgsConstructor;
-import me.whereareiam.identica.event.EventListener;
-import me.whereareiam.identica.event.base.IdenticEvent;
-import me.whereareiam.identica.type.event.EventOrder;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationResolvedEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationResolvedEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationResolvedEvent;
+import me.whereareiam.identica.pipeline.PendingScenarioService;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Blocks a connection while Identica still waits for it to authenticate, register or migrate. Identica follows the
+ * scenarios itself, including a player who leaves before finishing one.
+ */
 @RequiredArgsConstructor
-public class DefaultMessageFilterService implements MessageFilterService, EventListener {
+public class DefaultMessageFilterService implements MessageFilterService {
 
-    private final Set<UUID> blockedConnections = ConcurrentHashMap.newKeySet();
+    private final PendingScenarioService pendingScenarios;
 
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
-        return blockedConnections.contains(connectionUniqueId);
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onAuthenticationRequired(AuthenticationRequiredEvent event) {
-        blockedConnections.add(event.getConnectionUniqueId());
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onAuthenticationResolved(AuthenticationResolvedEvent event) {
-        blockedConnections.remove(event.getConnectionUniqueId());
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onRegistrationRequired(RegistrationRequiredEvent event) {
-        blockedConnections.add(event.getConnectionUniqueId());
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onRegistrationResolved(RegistrationResolvedEvent event) {
-        blockedConnections.remove(event.getConnectionUniqueId());
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onMigrationRequired(MigrationRequiredEvent event) {
-        blockedConnections.add(event.getConnectionUniqueId());
-    }
-
-    @IdenticEvent(EventOrder.HIGH)
-    public void onMigrationResolved(MigrationResolvedEvent event) {
-        blockedConnections.remove(event.getConnectionUniqueId());
+        // PacketEvents has no UUID for a connection that has not logged in yet; Identica follows none of those
+        return connectionUniqueId != null && pendingScenarios.isPending(connectionUniqueId);
     }
 }

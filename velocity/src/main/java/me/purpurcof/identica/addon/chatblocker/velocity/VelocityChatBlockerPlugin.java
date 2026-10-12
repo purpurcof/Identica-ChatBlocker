@@ -5,22 +5,15 @@ import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import me.purpurcof.identica.addon.chatblocker.listener.PacketEventsListener;
 import com.google.inject.Inject;
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Dependency;
 import com.velocitypowered.api.plugin.Plugin;
 import lombok.Getter;
-import com.velocitypowered.api.proxy.ProxyServer;
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
 import me.whereareiam.identica.IdenticaAPI;
-import me.whereareiam.identica.Registry;
-import me.whereareiam.identica.Reloadable;
 import org.slf4j.Logger;
-
-import java.util.concurrent.TimeUnit;
 
 @Plugin(
         id = "identica-chatblocker",
@@ -36,19 +29,14 @@ import java.util.concurrent.TimeUnit;
 public class VelocityChatBlockerPlugin {
 
     private final Logger logger;
-    private final ProxyServer server;
     @Getter
     private volatile DefaultMessageFilterService filterService;
     @Getter
     private volatile DefaultIdenticaMessageScanner messageScanner;
 
     @Inject
-    public VelocityChatBlockerPlugin(
-            Logger logger,
-            ProxyServer server
-    ) {
+    public VelocityChatBlockerPlugin(Logger logger) {
         this.logger = logger;
-        this.server = server;
     }
 
     @Subscribe
@@ -58,11 +46,7 @@ public class VelocityChatBlockerPlugin {
                 PacketListenerPriority.NORMAL
         );
 
-        if (IdenticaAPI.isInitialized()) {
-            initServices();
-        } else {
-            scheduleInit(0);
-        }
+        IdenticaAPI.whenReady(this::initServices);
     }
 
     @Subscribe
@@ -70,39 +54,12 @@ public class VelocityChatBlockerPlugin {
         logger.info("Identica-ChatBlocker shutting down");
     }
 
-    private void scheduleInit(int attempt) {
-        if (attempt >= 5) {
-            logger.warn("IdenticaAPI not available after {} attempts, giving up", attempt);
-            return;
-        }
+    private void initServices(IdenticaAPI identica) {
+        filterService = new DefaultMessageFilterService(identica.getPendingScenarioService());
 
-        long delay = (long) Math.pow(2, attempt) * 500;
-        server.getScheduler().buildTask(this, () -> initServices(attempt)).delay(delay, TimeUnit.MILLISECONDS).schedule();
-    }
-
-    private void initServices() {
-        initServices(0);
-    }
-
-    private void initServices(int attempt) {
-        if (!IdenticaAPI.isInitialized()) {
-            if (attempt < 5) {
-                logger.warn("IdenticaAPI not initialized, retrying in {}ms", (long) Math.pow(2, attempt + 1) * 500);
-                scheduleInit(attempt + 1);
-            } else {
-                logger.warn("IdenticaAPI not initialized, giving up after {} attempts", attempt);
-            }
-
-            return;
-        }
-
-        filterService = new DefaultMessageFilterService();
-        IdenticaAPI.getEventManager().register(filterService);
-
-        messageScanner = new DefaultIdenticaMessageScanner();
+        messageScanner = new DefaultIdenticaMessageScanner(identica);
         messageScanner.scan();
-
-        IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {})).register(messageScanner);
+        identica.getEventManager().register(messageScanner);
 
         logger.info("Identica-ChatBlocker initialized");
     }

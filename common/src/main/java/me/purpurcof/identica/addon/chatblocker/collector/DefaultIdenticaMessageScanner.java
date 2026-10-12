@@ -1,30 +1,27 @@
 package me.purpurcof.identica.addon.chatblocker.collector;
 
-import com.google.inject.Key;
-import com.google.inject.Provider;
-import com.google.inject.TypeLiteral;
 import me.whereareiam.identica.IdenticaAPI;
-import me.whereareiam.identica.Registry;
-import me.whereareiam.identica.Reloadable;
-import me.whereareiam.identica.model.config.Messages;
+import me.whereareiam.identica.event.EventListener;
+import me.whereareiam.identica.event.base.IdenticEvent;
+import me.whereareiam.identica.event.lifecycle.IdenticaReloadedEvent;
+import me.whereareiam.identica.model.config.MessageDocument;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Reloadable {
+public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, EventListener {
 
+    private final IdenticaAPI identica;
     private volatile Set<Pattern> patterns = Collections.emptySet();
 
     private static final Logger LOGGER = Logger.getLogger(DefaultIdenticaMessageScanner.class.getName());
@@ -37,8 +34,15 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     // far above what a legitimate match needs (a few thousand steps), far below what a pathological one burns
     private static final long MAX_MATCH_STEPS = 2_000_000L;
 
-    @Override
-    public void reload() {
+    public DefaultIdenticaMessageScanner(IdenticaAPI identica) {
+        this.identica = identica;
+    }
+
+    /**
+     * {@code /identica admin reload} replaces the message documents, so the patterns are built again from the new ones.
+     */
+    @IdenticEvent
+    public void onReloaded(IdenticaReloadedEvent event) {
         scan();
     }
 
@@ -91,61 +95,12 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     }
 
     /**
-     * Every message bean Identica has loaded.
-     *
-     * <p>Two sources are needed: the root injector knows the core beans, but provider modules (credential,
-     * premium, ...) live in <em>child</em> injectors whose bindings the root injector does not list. Those
-     * beans are reachable through the config providers that registered themselves as reloadables.
-     */
-    protected Collection<Object> loadMessageBeans() {
-        List<Object> beans = new ArrayList<>();
-
-        collectFromRegisteredProviders(beans);
-        addDistinct(beans, IdenticaAPI.getService(Messages.class));
-
-        return beans;
-    }
-
-    /**
-     * Every message document of Identica is a {@code ConfigProvider}, and every config provider registers itself
-     * as a {@link Reloadable} (and is a Guice {@link Provider} of its current document). That covers the core
-     * messages and the provider/feature messages alike, including the ones living in child injectors that the
-     * root injector does not list, without relying on package names or on Guice internals.
-     */
-    private void collectFromRegisteredProviders(List<Object> beans) {
-        try {
-            Registry<Reloadable> registry = IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {}));
-            for (Reloadable reloadable : registry.values()) {
-                if (!(reloadable instanceof Provider<?> provider)) continue;
-
-                try {
-                    Object bean = provider.get();
-                    if (isMessageBean(bean)) addDistinct(beans, bean);
-                } catch (RuntimeException e) {
-                    LOGGER.log(Level.FINE, "Skipping config provider " + reloadable.getClass().getName(), e);
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to read the registered config providers", e);
-        }
-    }
-
-    /**
-     * Messages documents are named {@code ...Messages} ({@code Messages}, {@code UsernameMessages},
-     * {@code CredentialMessages}, ...). Other documents ({@code Settings}, {@code Commands}, ...) hold no
+     * Every messages document Identica has loaded: core's, the features' and those of each loaded provider. Each one
+     * implements {@link MessageDocument}; other documents ({@code settings}, {@code commands}, ...) hold no
      * player-facing text and must not widen the set of allowed chat.
      */
-    static boolean isMessageBean(Object bean) {
-        return bean != null && bean.getClass().getSimpleName().endsWith("Messages");
-    }
-
-    private static void addDistinct(List<Object> beans, Object bean) {
-        if (bean == null) return;
-        for (Object existing : beans) {
-            if (existing == bean) return;
-        }
-
-        beans.add(bean);
+    protected Collection<?> loadMessageBeans() {
+        return identica.getConfigCatalog().documents(MessageDocument.class);
     }
 
     private Pattern compileTemplate(String template) {
