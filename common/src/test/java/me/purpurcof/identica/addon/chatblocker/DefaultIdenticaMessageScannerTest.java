@@ -1,6 +1,7 @@
 package me.purpurcof.identica.addon.chatblocker;
 
 import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageScanner;
+import me.whereareiam.identica.IdenticaAPI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,11 +14,12 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 @DisplayName("Default Identica Message Scanner")
 class DefaultIdenticaMessageScannerTest {
 
-    private final DefaultIdenticaMessageScanner scanner = new DefaultIdenticaMessageScanner();
+    private final DefaultIdenticaMessageScanner scanner = new DefaultIdenticaMessageScanner(mock(IdenticaAPI.class));
 
     @BeforeEach
     void reset() throws Exception {

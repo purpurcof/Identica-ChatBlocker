@@ -1,12 +1,7 @@
 package me.purpurcof.identica.addon.chatblocker;
 
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationResolvedEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationResolvedEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationResolvedEvent;
+import me.whereareiam.identica.pipeline.PendingScenarioService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -20,97 +15,28 @@ import static org.mockito.Mockito.when;
 @DisplayName("Default Message Filter Service")
 class DefaultMessageFilterServiceTest {
 
-    private final DefaultMessageFilterService service = new DefaultMessageFilterService();
+    private final PendingScenarioService pendingScenarios = mock(PendingScenarioService.class);
+    private final DefaultMessageFilterService service = new DefaultMessageFilterService(pendingScenarios);
 
-    private static AuthenticationRequiredEvent authRequired(UUID connectionId) {
-        AuthenticationRequiredEvent event = mock(AuthenticationRequiredEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    private static AuthenticationResolvedEvent authResolved(UUID connectionId) {
-        AuthenticationResolvedEvent event = mock(AuthenticationResolvedEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    private static RegistrationRequiredEvent regRequired(UUID connectionId) {
-        RegistrationRequiredEvent event = mock(RegistrationRequiredEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    private static RegistrationResolvedEvent regResolved(UUID connectionId) {
-        RegistrationResolvedEvent event = mock(RegistrationResolvedEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    private static MigrationRequiredEvent migRequired(UUID connectionId) {
-        MigrationRequiredEvent event = mock(MigrationRequiredEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    private static MigrationResolvedEvent migResolved(UUID connectionId) {
-        MigrationResolvedEvent event = mock(MigrationResolvedEvent.class);
-        when(event.getConnectionUniqueId()).thenReturn(connectionId);
-        return event;
-    }
-
-    @DisplayName("Tracks blocked state via isBlocked method")
+    @DisplayName("Blocks a connection while Identica waits for it to authenticate, register or migrate")
     @Test
-    void tracksBlockedState() {
-        UUID connectionId = UUID.randomUUID();
+    void blocksPendingConnection() {
+        UUID connection = UUID.randomUUID();
+        when(pendingScenarios.isPending(connection)).thenReturn(true);
 
-        assertFalse(service.isBlocked(connectionId));
-
-        service.onAuthenticationRequired(authRequired(connectionId));
-        assertTrue(service.isBlocked(connectionId));
-
-        service.onAuthenticationResolved(authResolved(connectionId));
-        assertFalse(service.isBlocked(connectionId));
+        assertTrue(service.isBlocked(connection));
     }
 
-    @DisplayName("Adds to local set on RegistrationRequired")
+    @DisplayName("Lets a connection through once nothing is pending for it")
     @Test
-    void addsLocalOnRegistrationRequired() {
-        UUID connectionId = UUID.randomUUID();
-
-        service.onRegistrationRequired(regRequired(connectionId));
-
-        assertTrue(service.isBlocked(connectionId));
+    void allowsConnectionWithoutPendingScenario() {
+        assertFalse(service.isBlocked(UUID.randomUUID()));
     }
 
-    @DisplayName("Removes from local set on RegistrationResolved")
+    @SuppressWarnings("DataFlowIssue")
+    @DisplayName("A connection without a UUID is never blocked (and does not throw)")
     @Test
-    void removesLocalOnRegistrationResolved() {
-        UUID connectionId = UUID.randomUUID();
-        service.onRegistrationRequired(regRequired(connectionId));
-
-        service.onRegistrationResolved(regResolved(connectionId));
-
-        assertFalse(service.isBlocked(connectionId));
-    }
-
-    @DisplayName("Adds to local set on MigrationRequired")
-    @Test
-    void addsLocalOnMigrationRequired() {
-        UUID connectionId = UUID.randomUUID();
-
-        service.onMigrationRequired(migRequired(connectionId));
-
-        assertTrue(service.isBlocked(connectionId));
-    }
-
-    @DisplayName("Removes from local set on MigrationResolved")
-    @Test
-    void removesLocalOnMigrationResolved() {
-        UUID connectionId = UUID.randomUUID();
-        service.onMigrationRequired(migRequired(connectionId));
-
-        service.onMigrationResolved(migResolved(connectionId));
-
-        assertFalse(service.isBlocked(connectionId));
+    void nullConnectionIsNotBlocked() {
+        assertFalse(service.isBlocked(null));
     }
 }
