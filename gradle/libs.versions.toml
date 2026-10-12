@@ -1,6 +1,6 @@
 [versions]
 identica = "dev-63f5499"
-configura = "2.1.0"
+configura = "2.0.1"
 keystone = "1.0.0"
 guice = "7.0.0"
 lombok = "1.18.48"
@@ -35,8 +35,6 @@ mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mo
 mockito-junit = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockito" }
 
 # attache
-attache-standalone = { group = "me.whereareiam", name = "attache-standalone", version.ref = "attache" }
-attache-velocity = { group = "me.whereareiam", name = "attache-velocity", version.ref = "attache" }
 attache-bungeecord = { group = "me.whereareiam", name = "attache-bungeecord", version.ref = "attache" }
 
 packetevents-api = { group = "com.github.retrooper", name = "packetevents-api", version.ref = "packetevents" }

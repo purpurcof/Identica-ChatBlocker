@@ -1,6 +1,5 @@
 plugins {
     id("platform-conventions")
-    alias(libs.plugins.attache)
 }
 
 repositories {
@@ -10,7 +9,6 @@ repositories {
 dependencies {
     compileOnly(libs.velocity)
     annotationProcessor(libs.velocity)
-    implementation(libs.attache.velocity)
     compileOnly(libs.packetevents.api)
     compileOnly(libs.packetevents.velocity)
 

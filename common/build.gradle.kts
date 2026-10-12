@@ -1,27 +1,16 @@
-import me.whereareiam.attache.plugin.gradle.extension.AttacheExtension
-
 plugins {
     id("java-conventions")
-    alias(libs.plugins.attache)
 }
 
 dependencies {
+    // Configura is provided by Identica at runtime (this addon no longer loads its own copy). It stays on the
+    // compile classpath because the Identica API references its types in signatures; keep the version in line
+    // with the one the targeted Identica build ships.
     compileOnly(libs.configura)
     compileOnly(libs.adventure.minimessage)
     compileOnly(libs.adventure.text.serializer.plain)
     compileOnly(libs.packetevents.api)
-    implementation(libs.attache.standalone)
-    attache(libs.configura)
 
     testImplementation(libs.configura)
     testImplementation(libs.adventure.minimessage)
-}
-
-extensions.configure<AttacheExtension>("attache") {
-    transitive.set(true)
-    repository("https://registry.whereareiam.me/maven/packages")
-    library(libs.configura) {
-        relocate("com{}fasterxml{}jackson", "me.purpurcof.identica.addon.chatblocker.libs.jackson")
-        relocate("org{}yaml{}snakeyaml", "me.purpurcof.identica.addon.chatblocker.libs.snakeyaml")
-    }
 }

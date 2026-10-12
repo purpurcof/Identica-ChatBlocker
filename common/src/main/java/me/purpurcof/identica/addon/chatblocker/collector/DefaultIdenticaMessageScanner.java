@@ -1,18 +1,16 @@
 package me.purpurcof.identica.addon.chatblocker.collector;
 
-import com.google.inject.Injector;
 import com.google.inject.Key;
-import com.google.inject.Binding;
 import com.google.inject.Provider;
 import com.google.inject.TypeLiteral;
 import me.whereareiam.identica.IdenticaAPI;
 import me.whereareiam.identica.Registry;
 import me.whereareiam.identica.Reloadable;
+import me.whereareiam.identica.model.config.Messages;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -102,42 +100,27 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
     protected Collection<Object> loadMessageBeans() {
         List<Object> beans = new ArrayList<>();
 
-        collectFromRootInjector(beans);
         collectFromRegisteredProviders(beans);
+        addDistinct(beans, IdenticaAPI.getService(Messages.class));
 
         return beans;
     }
 
-    private void collectFromRootInjector(List<Object> beans) {
-        Injector injector = IdenticaAPI.getService(Injector.class);
-        Map<Key<?>, Binding<?>> bindings = injector.getAllBindings();
-
-        for (Map.Entry<Key<?>, Binding<?>> entry : bindings.entrySet()) {
-            Key<?> key = entry.getKey();
-            Binding<?> binding = entry.getValue();
-
-            try {
-                Type type = key.getTypeLiteral().getType();
-                if (!(type instanceof Class<?> clazz)) continue;
-                if (!clazz.getPackageName().startsWith("me.whereareiam.identica.model.config")) continue;
-
-                addDistinct(beans, binding.getProvider().get());
-            } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Failed to get message bean: " + key, e);
-            }
-        }
-    }
-
+    /**
+     * Every message document of Identica is a {@code ConfigProvider}, and every config provider registers itself
+     * as a {@link Reloadable} (and is a Guice {@link Provider} of its current document). That covers the core
+     * messages and the provider/feature messages alike, including the ones living in child injectors that the
+     * root injector does not list, without relying on package names or on Guice internals.
+     */
     private void collectFromRegisteredProviders(List<Object> beans) {
         try {
-            Registry<Reloadable> registry = IdenticaAPI.getService(Key.get(new TypeLiteral<>() {}));
+            Registry<Reloadable> registry = IdenticaAPI.getService(Key.get(new TypeLiteral<Registry<Reloadable>>() {}));
             for (Reloadable reloadable : registry.values()) {
-                // every config provider registers itself here and exposes its current bean through get()
                 if (!(reloadable instanceof Provider<?> provider)) continue;
 
                 try {
                     Object bean = provider.get();
-                    if (bean != null && bean.getClass().getSimpleName().endsWith("Messages")) addDistinct(beans, bean);
+                    if (isMessageBean(bean)) addDistinct(beans, bean);
                 } catch (RuntimeException e) {
                     LOGGER.log(Level.FINE, "Skipping config provider " + reloadable.getClass().getName(), e);
                 }
@@ -145,6 +128,15 @@ public class DefaultIdenticaMessageScanner implements IdenticaMessageScanner, Re
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to read the registered config providers", e);
         }
+    }
+
+    /**
+     * Messages documents are named {@code ...Messages} ({@code Messages}, {@code UsernameMessages},
+     * {@code CredentialMessages}, ...). Other documents ({@code Settings}, {@code Commands}, ...) hold no
+     * player-facing text and must not widen the set of allowed chat.
+     */
+    static boolean isMessageBean(Object bean) {
+        return bean != null && bean.getClass().getSimpleName().endsWith("Messages");
     }
 
     private static void addDistinct(List<Object> beans, Object bean) {

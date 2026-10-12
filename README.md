@@ -19,7 +19,7 @@ Addon-plugin for [Identica](https://github.com/whereareiam/Identica) that blocks
 ### Requirements
 
 * **Dependencies:**
-  * [Identica 3.0.0](https://github.com/whereareiam/Identica)
+  * [Identica](https://github.com/whereareiam/Identica) dev build `63f5499` or newer (the unreleased 3.0.0 line)
   * [packetevents 2.14.x](https://github.com/retrooper/packetevents)
 * **Platforms:**
   * Velocity
