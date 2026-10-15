@@ -13,6 +13,7 @@ junit-platform = "6.1.3"
 mockito = "5.24.0"
 attache = "1.0.0"
 shadow = "9.6.1"
+anvil = "dev-8b22d70"
 packetevents = "2.14.1-SNAPSHOT"
 
 [libraries]
@@ -43,6 +44,14 @@ packetevents-bungeecord = { group = "com.github.retrooper", name = "packetevents
 
 shadow-gradle-plugin = { group = "com.gradleup.shadow", name = "shadow-gradle-plugin", version.ref = "shadow" }
 
+# live tests
+anvil-protocol-mcprotocol = { group = "me.whereareiam.anvil", name = "protocol-mcprotocol", version.ref = "anvil" }
+
 [plugins]
+anvil = { id = "me.whereareiam.anvil", version.ref = "anvil" }
+anvil-junit = { id = "me.whereareiam.anvil.junit", version.ref = "anvil" }
+anvil-capability-default = { id = "me.whereareiam.anvil.capability.default", version.ref = "anvil" }
+anvil-platform-paper = { id = "me.whereareiam.anvil.platform.paper", version.ref = "anvil" }
+anvil-platform-velocity = { id = "me.whereareiam.anvil.platform.velocity", version.ref = "anvil" }
 attache = { id = "me.whereareiam.attache", version.ref = "attache" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
