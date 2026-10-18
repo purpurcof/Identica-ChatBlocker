@@ -43,3 +43,15 @@ While a player is authenticating, registering or migrating, chat sent to them is
 
 > BungeeCord support is untested. Its Adventure classes are loaded separately from PacketEvents', so verify it on a test proxy before relying on it.
 
+
+### Live tests
+
+The `testing` module starts the packaged addon on a real Velocity proxy next to Identica, with Paper backends, and drives simulated players through it with [Anvil](https://github.com/whereareiam/anvil), in the way Identica's own `identica-testing` module does: a test declares its network with an annotation and describes a player with `Journey`, and a message expectation names the message through the configuration models the plugins read, never through copied text. Unit tests stay in their own modules; `./gradlew test` does not start these.
+
+```shell
+./gradlew :testing:anvil
+```
+
+Java 25 is needed. The first run downloads the proxy and server distributions; later runs reuse them. The tests install the jars of the Identica release named by `identica` in `gradle/libs.versions.toml`, which Gradle downloads from the release on GitHub. To run against a build of your own, pass its jars: `-Pidentica.jar=<file>`, `-Pidentica.credential.jar=<file>` and `-Pidentica.premium.jar=<file>`.
+
+A failed test keeps its network under `testing/build/anvil/`, with an `anvil-console.log` per process, and Identica's debug logging is on. The *Live tests* workflow runs the same task on pull requests and on pushes to `main` and `dev`.

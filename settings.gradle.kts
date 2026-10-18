@@ -17,13 +17,25 @@ dependencyResolutionManagement {
         maven("https://registry.whereareiam.me/maven/packages")
         maven("https://repo.papermc.io/repository/maven-public/")
         maven("https://oss.sonatype.org/content/repositories/snapshots/")
+        maven("https://repo.opencollab.dev/main/")
+        maven("https://repo.opencollab.dev/maven-snapshots/")
         maven("https://repo.codemc.io/repository/maven-releases/")
         maven("https://repo.codemc.io/repository/maven-snapshots/")
+        // The PacketEvents plugin the live tests install on the proxy, as a release of its own platform.
+        exclusiveContent {
+            forRepository {
+                maven("https://api.modrinth.com/maven")
+            }
+            filter {
+                includeGroup("maven.modrinth")
+            }
+        }
     }
 }
 
 include(":common")
 include(":velocity")
 include(":bungeecord")
+include(":testing")
 
 includeBuild("build-logic")
