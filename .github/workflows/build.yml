@@ -9,13 +9,13 @@ on:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       name: ${{ steps.details.outputs.name }}
       version: ${{ steps.details.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Extract project details
         id: details
@@ -27,14 +27,14 @@ jobs:
 
   build:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       checks: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build project
         uses: ./.github/actions/gradle-build
@@ -52,7 +52,7 @@ jobs:
           mv bungeecord/build/libs/*.jar output/${{ needs.prepare.outputs.name }}-BungeeCord-${{ needs.prepare.outputs.version }}.jar
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ needs.prepare.outputs.name }}
           path: output/

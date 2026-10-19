@@ -1,60 +1,23 @@
 package me.purpurcof.identica.addon.chatblocker.service;
 
-import me.whereareiam.identica.event.EventListener;
-import me.whereareiam.identica.event.base.IdenticEvent;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationRequiredEvent;
-import me.whereareiam.identica.event.scenario.authentication.AuthenticationResolvedEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.registration.RegistrationResolvedEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationRequiredEvent;
-import me.whereareiam.identica.event.scenario.migration.MigrationResolvedEvent;
-import me.whereareiam.identica.replication.cache.base.Cache;
+import lombok.RequiredArgsConstructor;
+import me.whereareiam.identica.pipeline.PendingScenarioService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 
-public class DefaultMessageFilterService implements MessageFilterService, EventListener {
+/**
+ * Blocks a connection while Identica still waits for it to authenticate, register or migrate. Identica follows the
+ * scenarios itself, including a player who leaves before finishing one.
+ */
+@RequiredArgsConstructor
+public class DefaultMessageFilterService implements MessageFilterService {
 
-    private static final long DEFAULT_TTL_MS = 300_000;
-
-    private final Cache<String> blockedCache;
-
-    public DefaultMessageFilterService(Cache<String> blockedCache) {
-        this.blockedCache = blockedCache;
-    }
+    private final PendingScenarioService pendingScenarios;
 
     @Override
     public boolean isBlocked(@NotNull UUID connectionUniqueId) {
-        return blockedCache.get(connectionUniqueId.toString()).join().isPresent();
-    }
-
-    @IdenticEvent
-    public void onAuthenticationRequired(AuthenticationRequiredEvent event) {
-        blockedCache.put(event.getConnectionUniqueId().toString(), "1", DEFAULT_TTL_MS);
-    }
-
-    @IdenticEvent
-    public void onAuthenticationResolved(AuthenticationResolvedEvent event) {
-        blockedCache.invalidate(event.getConnectionUniqueId().toString());
-    }
-
-    @IdenticEvent
-    public void onRegistrationRequired(RegistrationRequiredEvent event) {
-        blockedCache.put(event.getConnectionUniqueId().toString(), "1", DEFAULT_TTL_MS);
-    }
-
-    @IdenticEvent
-    public void onRegistrationResolved(RegistrationResolvedEvent event) {
-        blockedCache.invalidate(event.getConnectionUniqueId().toString());
-    }
-
-    @IdenticEvent
-    public void onMigrationRequired(MigrationRequiredEvent event) {
-        blockedCache.put(event.getConnectionUniqueId().toString(), "1", DEFAULT_TTL_MS);
-    }
-
-    @IdenticEvent
-    public void onMigrationResolved(MigrationResolvedEvent event) {
-        blockedCache.invalidate(event.getConnectionUniqueId().toString());
+        // PacketEvents has no UUID for a connection that has not logged in yet; Identica follows none of those
+        return connectionUniqueId != null && pendingScenarios.isPending(connectionUniqueId);
     }
 }

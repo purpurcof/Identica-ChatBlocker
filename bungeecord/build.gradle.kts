@@ -24,6 +24,12 @@ extensions.configure<AttacheExtension>("attache") {
     library(libs.adventure.text.serializer.plain)
 }
 
+tasks.processResources {
+    val properties = mapOf("version" to project.version.toString())
+    inputs.properties(properties)
+    filesMatching("bungee.yml") { expand(properties) }
+}
+
 tasks.shadowJar {
     archiveClassifier.set("")
     archiveFileName.set("Identica-ChatBlocker-BungeeCord-${project.version}.jar")

@@ -6,18 +6,15 @@ import me.purpurcof.identica.addon.chatblocker.collector.DefaultIdenticaMessageS
 import me.purpurcof.identica.addon.chatblocker.listener.PacketEventsListener;
 import me.purpurcof.identica.addon.chatblocker.service.DefaultMessageFilterService;
 import me.whereareiam.identica.IdenticaAPI;
-import me.whereareiam.identica.model.replication.ReplicationType;
-import me.whereareiam.identica.replication.ReplicationSystem;
-import me.whereareiam.identica.replication.cache.ReplicatedCache;
-import net.md_5.bungee.api.ProxyServer;
+import lombok.Getter;
 import net.md_5.bungee.api.plugin.Plugin;
-
-import java.util.concurrent.TimeUnit;
 
 public class BungeeCordChatBlockerPlugin extends Plugin {
 
-    private DefaultMessageFilterService filterService;
-    private DefaultIdenticaMessageScanner messageScanner;
+    @Getter
+    private volatile DefaultMessageFilterService filterService;
+    @Getter
+    private volatile DefaultIdenticaMessageScanner messageScanner;
 
     @Override
     public void onEnable() {
@@ -26,9 +23,7 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
                 PacketListenerPriority.NORMAL
         );
 
-        ProxyServer.getInstance().getScheduler().schedule(this, this::initServices, 2, TimeUnit.SECONDS);
-
-        getLogger().info("Identica-ChatBlocker initialized");
+        IdenticaAPI.whenReady(this::initServices);
     }
 
     @Override
@@ -36,31 +31,13 @@ public class BungeeCordChatBlockerPlugin extends Plugin {
         getLogger().info("Identica-ChatBlocker shutting down");
     }
 
-    private void initServices() {
-        if (!IdenticaAPI.isInitialized()) {
-            getLogger().warning("IdenticaAPI not initialized, chat blocker will not work");
-            return;
-        }
+    private void initServices(IdenticaAPI identica) {
+        filterService = new DefaultMessageFilterService(identica.getPendingScenarioService());
 
-        ReplicationSystem replicationSystem = IdenticaAPI.getReplicationSystem();
-        ReplicatedCache<String> blockedCache = replicationSystem
-                .cache("chatblocker:blocked")
-                .defaultTtl(300_000)
-                .replicated(ReplicationType.identity(String.class));
-        filterService = new DefaultMessageFilterService(blockedCache);
-        IdenticaAPI.getEventManager().register(filterService);
-
-        messageScanner = new DefaultIdenticaMessageScanner();
+        messageScanner = new DefaultIdenticaMessageScanner(identica);
         messageScanner.scan();
+        identica.getEventManager().register(messageScanner);
 
-        getLogger().info("Identica-ChatBlocker services ready");
-    }
-
-    public DefaultMessageFilterService getFilterService() {
-        return filterService;
-    }
-
-    public DefaultIdenticaMessageScanner getMessageScanner() {
-        return messageScanner;
+        getLogger().info("Identica-ChatBlocker initialized");
     }
 }

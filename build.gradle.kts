@@ -1,5 +1,5 @@
 group = "me.purpurcof.identica"
-version = "1.1.0"
+version = "1.2.0"
 
 allprojects {
     version = rootProject.version
@@ -9,6 +9,6 @@ allprojects {
 subprojects {
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
-        options.release.set(21)
+        options.release.set(25)
     }
 }
